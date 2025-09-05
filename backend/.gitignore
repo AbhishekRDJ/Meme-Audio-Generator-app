@@ -1,0 +1,17 @@
+
+# Flask
+instance/
+.flaskenv
+.venv
+
+# Python
+__pycache__/
+*.pyc
+*.log
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env
