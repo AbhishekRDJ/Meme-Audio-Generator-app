@@ -8,8 +8,15 @@ const { default: YTDlpWrap } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// make sure yt-dlp binary exists
-const ytDlpWrap = new YTDlpWrap();
+const BIN_PATH = path.join(__dirname, "../bin/yt-dlp");
+
+// if binary not exists, download once from GitHub
+if (!fs.existsSync(BIN_PATH)) {
+    console.log("⬇️ Downloading yt-dlp binary...");
+    await YTDlpWrap.downloadFromGithub(BIN_PATH);
+}
+
+const ytDlpWrap = new YTDlpWrap(BIN_PATH);
 
 export default async function ytDownloader(url) {
     return new Promise((resolve, reject) => {
@@ -18,38 +25,26 @@ export default async function ytDownloader(url) {
             fs.mkdirSync(downloadsDir);
         }
 
-        // generate a unique file path
         const output = path.join(downloadsDir, `${Date.now()}.mp3`);
-
         console.log(`🎵 Starting download: ${url}`);
         console.log(`📂 Output: ${output}`);
 
         const process = ytDlpWrap.exec([
             url,
-            "-f", "bestaudio/best",   // best available audio
-            "-x",                     // extract audio
-            "--audio-format", "mp3",  // convert to mp3
-            "--audio-quality", "0",   // best quality
+            "-f", "bestaudio/best",
+            "-x",
+            "--audio-format", "mp3",
+            "--audio-quality", "0",
             "-o", output,
         ]);
 
-        process.on("ytDlpEvent", (event) => {
-            if (event?.percent) {
-                console.log(`⏳ Progress: ${event.percent.toFixed(2)}%`);
-            }
-        });
-
-        process.on("error", (err) => {
-            console.error("❌ yt-dlp error:", err);
-            reject(err);
-        });
+        process.on("error", reject);
 
         process.on("close", (code) => {
-            console.log(`✅ yt-dlp finished with code ${code}`);
-            if (fs.existsSync(output)) {
+            if (code === 0 && fs.existsSync(output)) {
                 resolve(output);
             } else {
-                reject(new Error("yt-dlp did not create output file"));
+                reject(new Error("yt-dlp failed to produce output"));
             }
         });
     });
