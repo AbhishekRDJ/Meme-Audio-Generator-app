@@ -1,44 +1,56 @@
 // utils/ytDownloader.js
-import { Innertube } from "youtubei.js";
-import fs from "fs";
+import pkg from "yt-dlp-wrap";
 import path from "path";
-import ffmpeg from "fluent-ffmpeg";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const { default: YTDlpWrap } = pkg;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// make sure yt-dlp binary exists
+const ytDlpWrap = new YTDlpWrap();
 
 export default async function ytDownloader(url) {
-    try {
-        const youtube = await Innertube.create();
+    return new Promise((resolve, reject) => {
+        const downloadsDir = path.join(__dirname, "../downloads");
+        if (!fs.existsSync(downloadsDir)) {
+            fs.mkdirSync(downloadsDir);
+        }
 
-        const info = await youtube.getInfo(url);
+        // generate a unique file path
+        const output = path.join(downloadsDir, `${Date.now()}.mp3`);
 
-        // Get audio stream (webm)
-        const stream = await youtube.download(url, {
-            type: "audio",
-            quality: "best"
+        console.log(`🎵 Starting download: ${url}`);
+        console.log(`📂 Output: ${output}`);
+
+        const process = ytDlpWrap.exec([
+            url,
+            "-f", "bestaudio/best",   // best available audio
+            "-x",                     // extract audio
+            "--audio-format", "mp3",  // convert to mp3
+            "--audio-quality", "0",   // best quality
+            "-o", output,
+        ]);
+
+        process.on("ytDlpEvent", (event) => {
+            if (event?.percent) {
+                console.log(`⏳ Progress: ${event.percent.toFixed(2)}%`);
+            }
         });
 
-        const tempWebm = path.join("downloads", `${Date.now()}.webm`);
-        const outputMp3 = path.join("downloads", `${Date.now()}.mp3`);
-
-        // Save .webm first
-        const webmFile = fs.createWriteStream(tempWebm);
-        stream.pipe(webmFile);
-
-        return new Promise((resolve, reject) => {
-            webmFile.on("finish", () => {
-                // Convert to MP3
-                ffmpeg(tempWebm)
-                    .toFormat("mp3")
-                    .save(outputMp3)
-                    .on("end", () => {
-                        fs.unlinkSync(tempWebm); // cleanup webm
-                        resolve(outputMp3);
-                    })
-                    .on("error", (err) => reject(err));
-            });
-            webmFile.on("error", reject);
+        process.on("error", (err) => {
+            console.error("❌ yt-dlp error:", err);
+            reject(err);
         });
-    } catch (error) {
-        console.error("ytDownloader error:", error);
-        throw error;
-    }
+
+        process.on("close", (code) => {
+            console.log(`✅ yt-dlp finished with code ${code}`);
+            if (fs.existsSync(output)) {
+                resolve(output);
+            } else {
+                reject(new Error("yt-dlp did not create output file"));
+            }
+        });
+    });
 }
