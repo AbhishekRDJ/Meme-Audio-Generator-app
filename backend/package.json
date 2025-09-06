@@ -17,7 +17,9 @@
     "mongoose": "^7.6.1",
     "multer": "^1.4.5-lts.1",
     "play-dl": "^1.9.7",
-    "yt-dlp-wrap": "^2.3.12"
+    "youtubei.js": "^15.0.1",
+    "yt-dlp-wrap": "^2.3.12",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

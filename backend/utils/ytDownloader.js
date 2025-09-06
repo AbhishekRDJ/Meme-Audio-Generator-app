@@ -1,33 +1,44 @@
 // utils/ytDownloader.js
+import { Innertube } from "youtubei.js";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-import play from "play-dl";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import ffmpeg from "fluent-ffmpeg";
 
 export default async function ytDownloader(url) {
-    const downloadsDir = path.join(__dirname, "../downloads");
-    if (!fs.existsSync(downloadsDir)) {
-        fs.mkdirSync(downloadsDir);
+    try {
+        const youtube = await Innertube.create();
+
+        const info = await youtube.getInfo(url);
+
+        // Get audio stream (webm)
+        const stream = await youtube.download(url, {
+            type: "audio",
+            quality: "best"
+        });
+
+        const tempWebm = path.join("downloads", `${Date.now()}.webm`);
+        const outputMp3 = path.join("downloads", `${Date.now()}.mp3`);
+
+        // Save .webm first
+        const webmFile = fs.createWriteStream(tempWebm);
+        stream.pipe(webmFile);
+
+        return new Promise((resolve, reject) => {
+            webmFile.on("finish", () => {
+                // Convert to MP3
+                ffmpeg(tempWebm)
+                    .toFormat("mp3")
+                    .save(outputMp3)
+                    .on("end", () => {
+                        fs.unlinkSync(tempWebm); // cleanup webm
+                        resolve(outputMp3);
+                    })
+                    .on("error", (err) => reject(err));
+            });
+            webmFile.on("error", reject);
+        });
+    } catch (error) {
+        console.error("ytDownloader error:", error);
+        throw error;
     }
-
-    const output = path.join(downloadsDir, `${Date.now()}.mp3`);
-
-    console.log(`🎵 Starting download: ${url}`);
-    console.log(`📂 Output: ${output}`);
-
-    // Fetch YouTube audio
-    const stream = await play.stream(url, { quality: 1 });
-    const file = fs.createWriteStream(output);
-
-    await new Promise((resolve, reject) => {
-        stream.stream.pipe(file);
-        stream.stream.on("end", resolve);
-        stream.stream.on("error", reject);
-    });
-
-    console.log(`✅ File downloaded: ${output}`);
-    return output;
 }
