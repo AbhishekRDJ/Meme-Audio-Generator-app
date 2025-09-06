@@ -11,6 +11,7 @@ export const uploadAudio = async (req, res) => {
         if (!url || !title) {
             return res.status(400).json({ message: "URL and Title are required" });
         }
+        console.log("BODY:", req.body);
 
         // Step 1: Download & convert YouTube → MP3
         const filePath = await ytDownloader(url);
