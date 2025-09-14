@@ -53,6 +53,7 @@ export const uploadAudio = async (req, res) => {
         const audio = await Audio.create({
             title,
             url: result.secure_url,
+            originalUrl: url,
             uploader: req.user?._id || null,
             createdAt: new Date(),
         });
@@ -64,6 +65,7 @@ export const uploadAudio = async (req, res) => {
                 _id: audio._id,
                 title: audio.title,
                 url: audio.url,
+                originalUrl: audio.originalUrl,
                 createdAt: audio.createdAt
             },
         });
@@ -90,7 +92,7 @@ export const uploadAudio = async (req, res) => {
 export const getAudios = async (req, res) => {
     try {
         const audios = await Audio.find()
-            .select('title url createdAt uploader')
+            .select('title url originalUrl createdAt uploader')
             .sort({ createdAt: -1 })
             .populate('uploader', 'username email'); // Populate user info if needed
         res.json(audios);
@@ -110,7 +112,7 @@ export const searchAudios = async (req, res) => {
         const audios = await Audio.find({
             title: new RegExp(q, "i")
         })
-            .select('title url createdAt uploader')
+            .select('title url originalUrl createdAt uploader')
             .sort({ createdAt: -1 });
 
         res.json(audios);

@@ -6,7 +6,8 @@ const audioSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    url: { type: String, required: true },
+    url: { type: String, required: true }, // Cloudinary MP3 URL
+    originalUrl: { type: String, required: true }, // Original YouTube URL
     uploader: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
