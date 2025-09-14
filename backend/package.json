@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "npm run install-ytdlp",
+    "install-ytdlp": "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod a+rx /usr/local/bin/yt-dlp",
+    "postinstall": "npm run install-ytdlp || echo 'yt-dlp installation failed, trying alternative method'"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

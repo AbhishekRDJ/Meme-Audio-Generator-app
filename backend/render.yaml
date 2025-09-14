@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: meme-audio-backend
+    env: node
+    plan: starter
+    buildCommand: |
+      npm install
+      # Install yt-dlp
+      curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ./yt-dlp
+      chmod +x ./yt-dlp
+      # Install ffmpeg (required for audio conversion)
+      apt-get update && apt-get install -y ffmpeg
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PATH
+        value: /opt/render/project/src:$PATH
+    disk:
+      name: audio-storage
+      mountPath: /opt/render/project/src/downloads
+      sizeGB: 1
