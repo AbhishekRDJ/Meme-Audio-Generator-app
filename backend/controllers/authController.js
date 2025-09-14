@@ -12,7 +12,9 @@ export const signup = async (req, res) => {
             return res.status(400).json({ message: "User with that email or username already exists" });
         }
         const user = await User.create({ username, email, password: hashedPassword });
-        res.status(201).json({ message: "User created successfully" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        res.status(201).json({ message: "User created successfully", token, user: { id: user._id, username: user.username } });
+
     } catch (error) {
         res.status(400).json({ message: "Signup failed", error: error.message });
     }
@@ -28,7 +30,8 @@ export const login = async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-        res.json({ token, user: { id: user._id, username: user.username } });
+        res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+
     } catch (error) {
         res.status(500).json({ message: "Login failed", error: error.message });
     }

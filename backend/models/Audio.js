@@ -5,14 +5,17 @@ const audioSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
-
     },
-    url: { type: String, require: true },
-    creator: {
+    url: { type: String, required: true },
+    uploader: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
-
 });
-const Audio = mongoose.model("Audio", audioSchema)
+
+const Audio = mongoose.model("Audio", audioSchema);
 export default Audio;
